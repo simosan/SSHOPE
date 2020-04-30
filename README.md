@@ -27,14 +27,26 @@ xxxx is optional.
 
 ## How to Write a YAML File (Configuration Definition)
 
+Summary of Description
+
+```
+    TargetCon1:
+      ConnParm:
+      - hostname: XXX.XXX.XX.XXX
+      - port: XX
+      - userid: m.simosan
+      - passwd: _${MSIMOSANPASSWD} ※ environment variable
+      Operation:
+      - ope: "bash -c 'if [ ! -e _${WORKDIR} ]; then echo 'There is no directory'; exit 255; fi'"
+```      
+
 ---
-  - hostname: 		      hostname or IP  You can specify more than one by comma.
-  - port: xx                  The port number to connect to.
-  - userid: xxxx              User ID to connect to.
-  - passwd: xxxx
-  - keyfile: xxxx.pem         Optional. If a keyfile is specified, passwd cannot be listed.
-  - ope: OS command1
-  - ope: OS command2
+- hostname: hostname or IP  You can specify more than one by comma.
+- port: The port number to connect to.
+- userid: User ID to connect to.
+- passwd: Hardcodes are not acceptable. The format should be _${XXXXPASSWD}.
+- keyfile:Optional. If a keyfile is specified, passwd cannot be listed.
+- ope: OS command
 ---
 
 ## Note
