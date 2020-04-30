@@ -1,0 +1,56 @@
+#========================生成したkubernetesノード（EC2）のロードバランサー生成============================
+TargetCon1:
+  ConnParm:
+  - hostname: 192.168.11.13
+  - port: 22
+  - userid: sim
+  - passwd: _${SIMPASSWD}
+  # ope内で改行を入れたい場合は改行箇所を\nとすること
+  Operation:
+  ####### 前処理 ###########################
+  # workディレクトリがない場合は，この流れでNLBを生成できないので処理停止
+  - ope: "bash -c 'if [ ! -e _${WORKDIR} ]; then echo '必要なamitoec2ディレクトリが存在しません'; exit 255; fi'"
+  ####### prometheus用のターゲットグループ（ワーカーノード全部）作成 ########
+  - ope: "aws elbv2 create-target-group \
+          --name simkube-prometheus-grp \
+          --protocol TCP --port 30000 \
+          --vpc-id vpc-0d4eda3cf41a9b219 > _${WORKDIR}/simkube-prometheus-targetgrp.json"
+  ####### grafana用のターゲットグループ（ワーカーノード全部）作成 ########
+  - ope: "aws elbv2 create-target-group \
+          --name simkube-grafana-grp \
+          --protocol TCP --port 30020 \
+          --vpc-id vpc-0d4eda3cf41a9b219 > _${WORKDIR}/simkube-grafana-targetgrp.json"
+  # prometheus用ターゲットグループarn取得
+  - ope: "jq -r '.TargetGroups[].TargetGroupArn' _${WORKDIR}/simkube-prometheus-targetgrp.json > _${WORKDIR}/simkube-prometheus-target-arn.txt"
+  # grafana用ターゲットグループarn取得
+  - ope: "jq -r '.TargetGroups[].TargetGroupArn' _${WORKDIR}/simkube-grafana-targetgrp.json > _${WORKDIR}/simkube-grafana-target-arn.txt"
+  # prometheus用ターゲットグループにEC2（ワーカーノード）をすべて登録
+  - ope: "for i in `ls _${WORKDIR}/instance-id-simkube-node*`\n
+          do\n
+             TARGETID=`cat $i`\n
+             aws elbv2 register-targets --target-group-arn `cat _${WORKDIR}/simkube-prometheus-target-arn.txt` --targets Id=$TARGETID\n
+          done"
+  # grafana用ターゲットグループにEC2（ワーカーノード）をすべて登録
+  - ope: "for i in `ls _${WORKDIR}/instance-id-simkube-node*`\n
+          do\n
+             TARGETID=`cat $i`\n
+             aws elbv2 register-targets --target-group-arn `cat _${WORKDIR}/simkube-grafana-target-arn.txt` --targets Id=$TARGETID\n
+          done"
+  ####### ロードバランサー作成 #############
+  - ope: "aws elbv2 create-load-balancer \
+          --name simkube-lb --type network \
+          --ip-address-type ipv4 \
+          --subnets 'subnet-03fa45b54afe54bf5' 'subnet-02296a8884c013f56' \
+          --scheme internal > _${WORKDIR}/simkube-lb.json" 
+  # ロードバランサーarn取得
+  - ope: "jq -r '.LoadBalancers[].LoadBalancerArn' _${WORKDIR}/simkube-lb.json > _${WORKDIR}/simkube-lb-arn.txt" 
+  # prometheus用リスナー（port53000）作成
+  - ope: "aws elbv2 create-listener \
+          --load-balancer-arn `cat _${WORKDIR}/simkube-lb-arn.txt` \
+          --protocol TCP --port 53000 \
+          --default-actions Type=forward,TargetGroupArn=`cat _${WORKDIR}/simkube-prometheus-target-arn.txt` > _${WORKDIR}/simkube-prometheus-lb-listener.txt"
+  # grafana用リスナー（port53001）作成
+  - ope: "aws elbv2 create-listener \
+          --load-balancer-arn `cat _${WORKDIR}/simkube-lb-arn.txt` \
+          --protocol TCP --port 53001 \
+          --default-actions Type=forward,TargetGroupArn=`cat _${WORKDIR}/simkube-grafana-target-arn.txt` > _${WORKDIR}/simkube-grafana-lb-listener.txt"

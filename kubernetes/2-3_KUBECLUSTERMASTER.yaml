@@ -1,0 +1,24 @@
+#========================kubernetesマスターノードのプロビジョニング============================
+TargetCon1:
+  ConnParm:
+  - hostname: 192.168.112.20
+  - port: 22
+  - userid: ubuntu
+  - passwd: _${UBUNTUPASS}
+  # ope内で改行を入れたい場合は改行箇所を\nとすること
+  Operation:
+  # kubernetes共通プロビジョニングスクリプトの転送，プロビジョニングの実施
+  #- ope: scp@put@_${SOURCEWORKDIR}\kubernetes\kubemasterprov.sh@/home/ubuntu
+  - ope: scp@put@_${SOURCEWORKDIR}/kubernetes/kubemasterprov.sh@/home/ubuntu 
+  - ope: sudo bash /home/ubuntu/kubemasterprov.sh _${PROXYVAR} 2>&1
+  # joinスクリプトを回収→あとでワーカーノードに配る
+  #- ope: scp@get@~/kubeadm_join_cmd.sh@_${SOURCEWORKDIR}\kubernetes\
+  - ope: scp@get@~/kubeadm_join_cmd.sh@_${SOURCEWORKDIR}/kubernetes/ 
+  # マスターノードにnfsクライアントをいれているので，NFSサーバをマウントしたい場合は
+  # mount -t nfs 192.168.11.21:/Users/sim/vagrant/kubernetes/sharedata /home/ubuntu/sharedata
+  # podからnfsマウントできるようにnfsサーバをインストール
+  - ope: sudo apt-get install -y nfs-kernel-server 2>&1
+  - ope: mkdir ~/prometheus_data 2>&1
+  - ope: sudo su -c "echo '/home/ubuntu/prometheus_data 192.168.112.0/24(rw,sync,no_subtree_check,no_root_squash)' >> /etc/exports"
+  - ope: sudo systemctl enable nfs-kernel-server.service 2>&1
+  - ope: sudo systemctl start nfs-kernel-server.service
