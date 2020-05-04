@@ -15,7 +15,6 @@ Linux and UNIX servers with SSH connection.
 
 * python 3.7+
 * python library(pyyaml,paramiko,scp)
-* macOS 10.14+ or Windows10+ or Linux7+
 
 ## Usage
 
@@ -36,6 +35,7 @@ Summary of Description
       - port: XX
       - userid: m.simosan
       - passwd: _${MSIMOSANPASSWD} ※ environment variable
+      - keyfile: /xxxx/xxxx/xxxx.pem  ※ optional
       Operation:
       - ope: "bash -c 'if [ ! -e _${WORKDIR} ]; then echo 'There is no directory'; exit 255; fi'"
 ```      
@@ -45,7 +45,7 @@ Summary of Description
 - port: The port number to connect to.
 - userid: User ID to connect to.
 - passwd: Hardcodes are not acceptable. The format should be _${XXXXPASSWD}.
-- keyfile:Optional. If a keyfile is specified, passwd cannot be listed.
+- keyfile: Optional. If a keyfile is specified, passwd cannot be listed.
 - ope: OS command
 ---
 
