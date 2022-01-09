@@ -1,2 +1,6 @@
 work/
 old/
+kubernetes/*VAR.txt
+amazonlinux_*/
+redmine*/
+sim2019/
